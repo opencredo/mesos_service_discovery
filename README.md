@@ -1,4 +1,3 @@
-mesos_service_discovery
-=======================
+Marathon Service Discovery with HAProxy
+=======================================
 
-Service Discovery script for Mesos and Marathon
