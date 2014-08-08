@@ -2,6 +2,8 @@ package main
 
 import (
   "fmt"
+  "os"
+  "os/exec"
   "net/http"
   "io/ioutil"
   "encoding/json"
@@ -95,7 +97,7 @@ func loadExistingApps() {
   for _, app := range applications.Apps {
     _, ok := applicationMap[app.Id]
     if (!ok) {
-      fmt.Printf("Found application: %s\n", app.Id)
+      fmt.Printf("INFO Found application: %s\n", app.Id)
       app.ApplicationInstances = make(map[string]Task)
       applicationMap[app.Id] = app
       loadExistingTasks(app.Id)
@@ -120,17 +122,17 @@ func addTask(appId string, host string, ports []int, taskId string) {
   if (!ok) { loadExistingApps() }
   app, ok = applicationMap[appId]
   if (!ok) {
-    fmt.Printf("ERROR Unknown application %s\n", appId)
+    fmt.Printf("ERR Unknown application %s\n", appId)
     return
   }
   app.ApplicationInstances[taskId] = task
-  fmt.Printf("Found task for %s on %s [%s]\n", appId, task.Host, task.Id)
+  fmt.Printf("INFO Found task for %s on %s [%s]\n", appId, task.Host, task.Id)
 }
 
 func removeTask(appId string, host string, ports []int, taskId string) {
   app := applicationMap[appId]
   delete(app.ApplicationInstances, taskId)
-  fmt.Printf("Removed task for %s on %s [%s]\n", appId, host, taskId) 
+  fmt.Printf("INFO Removed task for %s on %s [%s]\n", appId, host, taskId)
 }
 
 func generateHAProxyConfig() {
@@ -146,7 +148,18 @@ func generateHAProxyConfig() {
       i++
     }
   }
-  fmt.Println(tmp.Name())
+  err = os.Rename(tmp.Name(), "/etc/haproxy/haproxy.cfg")
+  if (err != nil) {
+    fmt.Println("ERR Couldn't write /etc/haproxy/haproxy.cfg")
+    fmt.Println(err)
+    return
+  }
+  fmt.Println("INFO Written new /etc/haproxy/haproxy.cfg")
+  cmd := exec.Command("service", "haproxy", "reload")
+  err = cmd.Start()
+  if (err != nil) { fmt.Println("ERR failed to reload HAProxy"); return }
+  err = cmd.Wait()
+  if (err != nil) { fmt.Println("ERR failed to reload HAProxy"); return }
 }
 
 func eventsWorker() {
@@ -159,7 +172,7 @@ func eventsWorker() {
       } else if (e.TaskStatus == "TASK_KILLED" || e.TaskStatus == "TASK_LOST" || e.TaskStatus == "TASK_FAILED") {
         removeTask(e.AppId, e.Host, e.Ports, e.TaskId)
       } else {
-        fmt.Printf("WARN: Unknown task status %s\n", e.TaskStatus);
+        fmt.Printf("WARN Unknown task status %s\n", e.TaskStatus);
       }
       generateHAProxyConfig();
     }
