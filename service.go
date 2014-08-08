@@ -126,7 +126,7 @@ func addTask(appId string, host string, ports []int, taskId string) {
     return
   }
   app.ApplicationInstances[taskId] = task
-  fmt.Printf("INFO Found task for %s on %s [%s]\n", appId, task.Host, task.Id)
+  fmt.Printf("INFO Found task for %s on %s:%d [%s]\n", appId, task.Host, task.Ports[0], task.Id)
 }
 
 func removeTask(appId string, host string, ports []int, taskId string) {
