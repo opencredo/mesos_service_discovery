@@ -2,6 +2,7 @@ package main
 
 import (
   "fmt"
+  "flag"
   "os"
   "os/exec"
   "net/http"
@@ -68,11 +69,11 @@ listen stats
 var eventQueue = make(chan []byte)
 var applicationMap = make(map[string]Application)
 
-var MARATHON_HOST = "172.16.5.10"
-var MARATHON_PORT = "8080"
+var MARATHON_HOST = flag.String("host", "localhost", "The host Marathon is running on")
+var MARATHON_PORT = flag.String("port", "8080", "The port Marathon is running on")
 
 func loadExistingTasks(appId string) {
-  resp, err := http.Get("http://" + MARATHON_HOST + ":" + MARATHON_PORT + "/v2/apps/" + appId)
+  resp, err := http.Get("http://" + *MARATHON_HOST + ":" + *MARATHON_PORT + "/v2/apps/" + appId)
   if (err != nil) { return; }
   body, err2 := ioutil.ReadAll(resp.Body)
   if (err2 != nil) { return; }
@@ -86,7 +87,7 @@ func loadExistingTasks(appId string) {
 }
 
 func loadExistingApps() {
-  resp, err := http.Get("http://" + MARATHON_HOST + ":" + MARATHON_PORT + "/v2/apps")
+  resp, err := http.Get("http://" + *MARATHON_HOST + ":" + *MARATHON_PORT + "/v2/apps")
   if (err != nil) { return; }
   body, err2 := ioutil.ReadAll(resp.Body)
   if (err2 != nil) { return; }
@@ -180,6 +181,7 @@ func eventsWorker() {
 }
 
 func main() {
+  flag.Parse()
   fmt.Printf("Running things and stuff\n")
   loadExistingApps()
   generateHAProxyConfig()
