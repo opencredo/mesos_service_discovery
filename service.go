@@ -67,12 +67,12 @@ listen stats
 `
 
 var eventQueue = make(chan []byte)
-var applicationMap = make(map[string]Application)
 
 var MARATHON_HOST = flag.String("host", "localhost", "The host Marathon is running on")
 var MARATHON_PORT = flag.String("port", "8080", "The port Marathon is running on")
 
-func loadExistingTasks(appId string) {
+
+func loadExistingTasks(applicationMap map[string]Application, appId string) {
   resp, err := http.Get("http://" + *MARATHON_HOST + ":" + *MARATHON_PORT + "/v2/apps/" + appId)
   if (err != nil) { return; }
   body, err2 := ioutil.ReadAll(resp.Body)
@@ -82,11 +82,11 @@ func loadExistingTasks(appId string) {
   if (err3 != nil) { return; }
 
   for _, task := range app.App.Tasks {
-    addTask(appId, task.Host, task.Ports, task.Id)
+    addTask(applicationMap, appId, task.Host, task.Ports, task.Id)
   }
 }
 
-func loadExistingApps() {
+func loadExistingApps(applicationMap map[string]Application) {
   resp, err := http.Get("http://" + *MARATHON_HOST + ":" + *MARATHON_PORT + "/v2/apps")
   if (err != nil) { return; }
   body, err2 := ioutil.ReadAll(resp.Body)
@@ -101,7 +101,7 @@ func loadExistingApps() {
       fmt.Printf("INFO Found application: %s\n", app.Id)
       app.ApplicationInstances = make(map[string]Task)
       applicationMap[app.Id] = app
-      loadExistingTasks(app.Id)
+      loadExistingTasks(applicationMap, app.Id)
     }
   }
 }
@@ -117,10 +117,10 @@ func parseEvent(event []byte) (Event, bool) {
   return e, err == nil
 }
 
-func addTask(appId string, host string, ports []int, taskId string) {
+func addTask(applicationMap map[string]Application, appId string, host string, ports []int, taskId string) {
   task := Task{taskId, host, ports}
   app, ok := applicationMap[appId]
-  if (!ok) { loadExistingApps() }
+  if (!ok) { loadExistingApps(applicationMap) }
   app, ok = applicationMap[appId]
   if (!ok) {
     fmt.Printf("ERR Unknown application %s\n", appId)
@@ -130,13 +130,13 @@ func addTask(appId string, host string, ports []int, taskId string) {
   fmt.Printf("INFO Found task for %s on %s:%d [%s]\n", appId, task.Host, task.Ports[0], task.Id)
 }
 
-func removeTask(appId string, host string, ports []int, taskId string) {
+func removeTask(applicationMap map[string]Application, appId string, host string, ports []int, taskId string) {
   app := applicationMap[appId]
   delete(app.ApplicationInstances, taskId)
   fmt.Printf("INFO Removed task for %s on %s [%s]\n", appId, host, taskId)
 }
 
-func generateHAProxyConfig() {
+func generateHAProxyConfig(applicationMap map[string]Application) {
   tmp, err := ioutil.TempFile("", "haproxy.cfg")
   if (err != nil) { return; }
 
@@ -163,19 +163,23 @@ func generateHAProxyConfig() {
   if (err != nil) { fmt.Println("ERR failed to reload HAProxy"); return }
 }
 
-func eventsWorker() {
+func processStatusUpdateEvent(applicationMap map[string]Application, e Event) {
+  if (e.TaskStatus == "TASK_RUNNING") {
+    addTask(applicationMap, e.AppId, e.Host, e.Ports, e.TaskId)
+  } else if (e.TaskStatus == "TASK_KILLED" || e.TaskStatus == "TASK_LOST" || e.TaskStatus == "TASK_FAILED") {
+    removeTask(applicationMap, e.AppId, e.Host, e.Ports, e.TaskId)
+  } else {
+    fmt.Printf("WARN Unknown task status %s\n", e.TaskStatus);
+  }
+}
+
+func eventsWorker(applicationMap map[string]Application) {
   for {
     event := <-eventQueue
     e, ok := parseEvent(event)
     if (ok && e.EventType == "status_update_event") {
-      if (e.TaskStatus == "TASK_RUNNING") {
-        addTask(e.AppId, e.Host, e.Ports, e.TaskId)
-      } else if (e.TaskStatus == "TASK_KILLED" || e.TaskStatus == "TASK_LOST" || e.TaskStatus == "TASK_FAILED") {
-        removeTask(e.AppId, e.Host, e.Ports, e.TaskId)
-      } else {
-        fmt.Printf("WARN Unknown task status %s\n", e.TaskStatus);
-      }
-      generateHAProxyConfig();
+      processStatusUpdateEvent(applicationMap, e);
+      generateHAProxyConfig(applicationMap);
     }
   }
 }
@@ -183,9 +187,10 @@ func eventsWorker() {
 func main() {
   flag.Parse()
   fmt.Printf("Running things and stuff\n")
-  loadExistingApps()
-  generateHAProxyConfig()
-  go eventsWorker()
+  applicationMap := make(map[string]Application)
+  loadExistingApps(applicationMap)
+  generateHAProxyConfig(applicationMap)
+  go eventsWorker(applicationMap)
   http.HandleFunc("/events", eventsHandler)
   http.ListenAndServe(":8080", nil)
 }
