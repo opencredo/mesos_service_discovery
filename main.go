@@ -3,7 +3,6 @@ package main
 import (
   "encoding/json"
   "flag"
-  "fmt"
   "io/ioutil"
   "net/http"
 )
@@ -34,7 +33,6 @@ func getResponseJSON(address string, v interface{}) error {
 
 func main() {
   flag.Parse()
-  fmt.Printf("Running things and stuff\n")
   applicationMap := initApplicationMap()
   startEventService(applicationMap)
 }
