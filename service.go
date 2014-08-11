@@ -71,38 +71,42 @@ var eventQueue = make(chan []byte)
 var MARATHON_HOST = flag.String("host", "localhost", "The host Marathon is running on")
 var MARATHON_PORT = flag.String("port", "8080", "The port Marathon is running on")
 
+func getMarathonAddress() string {
+  return "http://" + *MARATHON_HOST + ":" + *MARATHON_PORT
+}
+
+func getResponseJSON(address string, v interface{}) error {
+	resp, err := http.Get(address)
+	if err != nil {
+		return err
+	}
+	body, err2 := ioutil.ReadAll(resp.Body)
+  resp.Body.Close()
+	if err2 != nil {
+		return err2
+	}
+	err = json.Unmarshal(body, &v)
+	if err != nil {
+		return err
+	}
+  return nil
+}
+
 func loadExistingTasks(applicationMap map[string]Application, appId string) {
-	resp, err := http.Get("http://" + *MARATHON_HOST + ":" + *MARATHON_PORT + "/v2/apps/" + appId)
+  var app MarathonTasksResponse
+  err := getResponseJSON(getMarathonAddress() + "/v2/apps/" + appId, &app)
 	if err != nil {
 		return
 	}
-	body, err2 := ioutil.ReadAll(resp.Body)
-	if err2 != nil {
-		return
-	}
-	var app MarathonTasksResponse
-	err3 := json.Unmarshal(body, &app)
-	if err3 != nil {
-		return
-	}
-
 	for _, task := range app.App.Tasks {
-		addTask(applicationMap, appId, task.Host, task.Ports, task.Id)
+		addTask(applicationMap, appId, task)
 	}
 }
 
 func loadExistingApps(applicationMap map[string]Application) {
-	resp, err := http.Get("http://" + *MARATHON_HOST + ":" + *MARATHON_PORT + "/v2/apps")
-	if err != nil {
-		return
-	}
-	body, err2 := ioutil.ReadAll(resp.Body)
-	if err2 != nil {
-		return
-	}
 	var applications MarathonAppsResponse
-	err3 := json.Unmarshal(body, &applications)
-	if err3 != nil {
+	err := getResponseJSON(getMarathonAddress() + "/v2/apps", &applications)
+	if err != nil {
 		return
 	}
 
@@ -130,8 +134,7 @@ func parseEvent(event []byte) (Event, bool) {
 	return e, err == nil
 }
 
-func addTask(applicationMap map[string]Application, appId string, host string, ports []int, taskId string) {
-	task := Task{taskId, host, ports}
+func addTask(applicationMap map[string]Application, appId string, task Task) {
 	app, ok := applicationMap[appId]
 	if !ok {
 		loadExistingApps(applicationMap)
@@ -141,7 +144,7 @@ func addTask(applicationMap map[string]Application, appId string, host string, p
 		fmt.Printf("ERR Unknown application %s\n", appId)
 		return
 	}
-	app.ApplicationInstances[taskId] = task
+	app.ApplicationInstances[task.Id] = task
 	fmt.Printf("INFO Found task for %s on %s:%d [%s]\n", appId, task.Host, task.Ports[0], task.Id)
 }
 
@@ -187,7 +190,8 @@ func generateHAProxyConfig(applicationMap map[string]Application) {
 
 func processStatusUpdateEvent(applicationMap map[string]Application, e Event) {
 	if e.TaskStatus == "TASK_RUNNING" {
-		addTask(applicationMap, e.AppId, e.Host, e.Ports, e.TaskId)
+    task := Task{e.TaskId, e.Host, e.Ports}
+		addTask(applicationMap, e.AppId, task)
 	} else if e.TaskStatus == "TASK_KILLED" || e.TaskStatus == "TASK_LOST" || e.TaskStatus == "TASK_FAILED" {
 		removeTask(applicationMap, e.AppId, e.TaskId)
 		fmt.Printf("INFO Removed task for %s on %s [%s]\n", e.AppId, e.Host, e.TaskId)
