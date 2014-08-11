@@ -42,7 +42,7 @@ func eventsWorker(applicationMap map[string]Application) {
     e, ok := parseEvent(event)
     if ok && e.EventType == "status_update_event" {
       processStatusUpdateEvent(applicationMap, e)
-      generateHAProxyConfig(applicationMap)
+      updateHAProxyConfig(applicationMap)
     }
   }
 }

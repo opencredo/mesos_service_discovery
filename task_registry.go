@@ -81,6 +81,6 @@ func loadExistingApps(applicationMap map[string]Application) {
 func initApplicationMap() map[string]Application {
   applicationMap := make(map[string]Application)
   loadExistingApps(applicationMap)
-  generateHAProxyConfig(applicationMap)
+  updateHAProxyConfig(applicationMap)
   return applicationMap
 }
