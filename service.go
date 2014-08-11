@@ -130,10 +130,9 @@ func addTask(applicationMap map[string]Application, appId string, host string, p
   fmt.Printf("INFO Found task for %s on %s:%d [%s]\n", appId, task.Host, task.Ports[0], task.Id)
 }
 
-func removeTask(applicationMap map[string]Application, appId string, host string, ports []int, taskId string) {
+func removeTask(applicationMap map[string]Application, appId string, taskId string) {
   app := applicationMap[appId]
   delete(app.ApplicationInstances, taskId)
-  fmt.Printf("INFO Removed task for %s on %s [%s]\n", appId, host, taskId)
 }
 
 func generateHAProxyConfig(applicationMap map[string]Application) {
@@ -167,7 +166,8 @@ func processStatusUpdateEvent(applicationMap map[string]Application, e Event) {
   if (e.TaskStatus == "TASK_RUNNING") {
     addTask(applicationMap, e.AppId, e.Host, e.Ports, e.TaskId)
   } else if (e.TaskStatus == "TASK_KILLED" || e.TaskStatus == "TASK_LOST" || e.TaskStatus == "TASK_FAILED") {
-    removeTask(applicationMap, e.AppId, e.Host, e.Ports, e.TaskId)
+    removeTask(applicationMap, e.AppId, e.TaskId)
+    fmt.Printf("INFO Removed task for %s on %s [%s]\n", e.AppId, e.Host, e.TaskId)
   } else {
     fmt.Printf("WARN Unknown task status %s\n", e.TaskStatus);
   }

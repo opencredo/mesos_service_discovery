@@ -35,3 +35,20 @@ func TestParseEvent(t *testing.T) {
     t.Error("Didn't parse host correctly")
   }
 }
+
+func TestRemoveTask(t *testing.T) {
+  m := make(map[string]Application)
+  tasks := make(map[string]Task)
+  task := Task{"test-task-id", "localhost", []int{}}
+  tasks["test-task-id"] = task
+  app := Application{"test-app-id", []int{}, tasks}
+  m["test-app-id"] = app
+
+  removeTask(m, "test-app-id", "test-task-id")
+
+  _, exists := m["test-app-id"]
+  if (!exists) { t.Error("Application shouldn't have been removed") }
+
+  _, exists = m["test-app-id"].ApplicationInstances["test-task-id"]
+  if (exists) { t.Error("Task should have been removed") }
+}
