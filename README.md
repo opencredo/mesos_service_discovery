@@ -7,21 +7,21 @@ Reload HAProxy every time Marathon creates or deletes a running task.
 
 ### Add to GOPATH
 
-Move the src/github.com directory into your GOPATH and run `go install github.com/opencredo/mesos_service_discovery`
+Move the `src/github.com` directory into your GOPATH and run `go install github.com/opencredo/mesos_service_discovery`
 
 ### Build script 
 
-Running ./build.sh should produce a binary in $PWD/bin/
+Running `./build.sh` should produce a binary in `$PWD/bin/`
 
 
 ## Usage
 
-Start the mesos_service_discovery binary; optionally with the following arguments:
+Start the `mesos_service_discovery` binary; optionally with the following arguments:
 
 | Argument | Default | Description |
-|-----------------------------------
-| -host | localhost | The host Marathon is running on |
-| -port | 8080      | The port Marathon is running on |
+|----------|---------|-------------|
+| host | localhost | The host Marathon is running on |
+| port | 8080      | The port Marathon is running on |
 
 Register the new service with Marathon:
 
