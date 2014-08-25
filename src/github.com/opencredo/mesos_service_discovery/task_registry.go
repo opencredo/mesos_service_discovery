@@ -1,7 +1,7 @@
 package main
 
 import (
-  "fmt"
+  "log"
 )
 
 type Application struct {
@@ -24,11 +24,11 @@ func addTask(applicationMap map[string]Application, appId string, task Task) {
   }
   app, ok = applicationMap[appId]
   if !ok {
-    fmt.Printf("ERR Unknown application %s\n", appId)
+    log.Printf("ERR Unknown application %s\n", appId)
     return
   }
   app.ApplicationInstances[task.Id] = task
-  fmt.Printf("INFO Found task for %s on %s:%d [%s]\n", appId, task.Host, task.Ports[0], task.Id)
+  log.Printf("INFO Found task for %s on %s:%d [%s]\n", appId, task.Host, task.Ports[0], task.Id)
 }
 
 func removeTask(applicationMap map[string]Application, appId string, taskId string) {
@@ -70,7 +70,7 @@ func loadExistingApps(applicationMap map[string]Application) {
   for _, app := range applications.Apps {
     _, ok := applicationMap[app.Id]
     if !ok {
-      fmt.Printf("INFO Found application: %s\n", app.Id)
+      log.Printf("INFO Found application: %s\n", app.Id)
       app.ApplicationInstances = make(map[string]Task)
       applicationMap[app.Id] = app
       loadExistingTasks(applicationMap, app.Id)

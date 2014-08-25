@@ -1,9 +1,9 @@
 package main
 
 import (
-  "fmt"
   "encoding/json"
   "io/ioutil"
+  "log"
   "net/http"
 )
 
@@ -22,9 +22,9 @@ func processStatusUpdateEvent(applicationMap map[string]Application, e Event) {
     addTask(applicationMap, e.AppId, task)
   } else if e.TaskStatus == "TASK_KILLED" || e.TaskStatus == "TASK_LOST" || e.TaskStatus == "TASK_FAILED" {
     removeTask(applicationMap, e.AppId, e.TaskId)
-    fmt.Printf("INFO Removed task for %s on %s [%s]\n", e.AppId, e.Host, e.TaskId)
+    log.Printf("INFO Removed task for %s on %s [%s]\n", e.AppId, e.Host, e.TaskId)
   } else {
-    fmt.Printf("WARN Unknown task status %s\n", e.TaskStatus)
+    log.Printf("WARN Unknown task status %s\n", e.TaskStatus)
   }
 }
 

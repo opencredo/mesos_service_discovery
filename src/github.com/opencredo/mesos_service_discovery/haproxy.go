@@ -2,6 +2,7 @@ package main
 
 import (
   "fmt"
+  "log"
   "os"
   "io/ioutil"
   "os/exec"
@@ -55,23 +56,22 @@ func generateHAProxyConfig(tmp *os.File, applicationMap map[string]Application) 
 func replaceHAProxyConfiguration(tmpFile string) {
   err := os.Rename(tmpFile, "/etc/haproxy/haproxy.cfg")
   if err != nil {
-    fmt.Println("ERR Couldn't write /etc/haproxy/haproxy.cfg")
-    fmt.Println(err)
+    log.Printf("ERR Couldn't write /etc/haproxy/haproxy.cfg: %s", err)
     return
   }
-  fmt.Println("INFO Written new /etc/haproxy/haproxy.cfg")
+  log.Println("INFO Written new /etc/haproxy/haproxy.cfg")
 }
 
 func reloadHAProxy() {
   cmd := exec.Command("service", "haproxy", "reload")
   err := cmd.Start()
   if err != nil {
-    fmt.Println("ERR failed to reload HAProxy")
+    log.Println("ERR failed to reload HAProxy")
     return
   }
   err = cmd.Wait()
   if err != nil {
-    fmt.Println("ERR failed to reload HAProxy")
+    log.Println("ERR failed to reload HAProxy")
     return
   }
 }

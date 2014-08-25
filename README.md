@@ -33,7 +33,6 @@ Replace MARATHON_HOST, MARATHON_PORT and CALLBACK_HOST (the host mesos_service_d
 
 ## TODO 
 
-* Proper logging
 * Automatically (un)register with Marathon
 * Separate HAProxy configuration generation / move towards a plugin based system
 
