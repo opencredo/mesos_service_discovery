@@ -54,8 +54,10 @@ func eventsHandler(w http.ResponseWriter, r *http.Request) {
   }
 }
 
-func startEventService(applicationMap map[string]Application) {
+func startEventService(applicationMap map[string]Application, port string) {
   go eventsWorker(applicationMap)
   http.HandleFunc("/events", eventsHandler)
-  http.ListenAndServe(":8080", nil)
+
+  log.Printf("Starting HTTP listener on port %s\n", port)
+  http.ListenAndServe(":" + port, nil)
 }

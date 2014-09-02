@@ -20,20 +20,16 @@ Start the `mesos_service_discovery` binary; optionally with the following argume
 
 | Argument | Default | Description |
 |----------|---------|-------------|
-| host | localhost | The host Marathon is running on |
-| port | 8080      | The port Marathon is running on |
+| host          | localhost | The hostname to advertise to Marathon (ie. the host this service is running on) |
+| port          | 8081      | The port to run this service on |
+| marathon_host | localhost | The host Marathon is running on |
+| marathon_port | 8080      | The port Marathon is running on |
 
-Register the new service with Marathon:
-
-```
-curl -X POST http://MARATHON_HOST:MARATHON_PORT/v2/eventSubscriptions\?callbackUrl\=http://CALLBACK_HOST:8080/events
-```
-
-Replace MARATHON_HOST, MARATHON_PORT and CALLBACK_HOST (the host mesos_service_discovery is running on) 
+The service will automatically try to register itself with Marathon on start-up.
 
 ## TODO 
 
-* Automatically (un)register with Marathon
+* Automatically deregister the service on shutdown
 * Separate HAProxy configuration generation / move towards a plugin based system
 
 ## License

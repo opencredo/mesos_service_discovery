@@ -62,6 +62,7 @@ func loadExistingTasks(applicationMap map[string]Application, appId string) {
 
 func loadExistingApps(applicationMap map[string]Application) {
   var applications MarathonAppsResponse
+  log.Printf("Initializing known applications by talking to %s/v2/apps\n", getMarathonAddress())
   err := getResponseJSON(getMarathonAddress() + "/v2/apps", &applications)
   if err != nil {
     return
