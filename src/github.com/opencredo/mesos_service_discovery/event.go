@@ -58,6 +58,6 @@ func startEventService(applicationMap map[string]Application, port string) {
   go eventsWorker(applicationMap)
   http.HandleFunc("/events", eventsHandler)
 
-  log.Printf("Starting HTTP listener on port %s\n", port)
+  log.Printf("INFO Starting HTTP listener on port %s\n", port)
   http.ListenAndServe(":" + port, nil)
 }

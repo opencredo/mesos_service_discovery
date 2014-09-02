@@ -40,21 +40,21 @@ func getResponseJSON(address string, v interface{}) error {
 }
 
 func registerWithMarathon() {
-  log.Printf("Registering this service (%s) with Marathon", getThisServiceAddress())
+  log.Printf("INFO Registering this service (%s) with Marathon", getThisServiceAddress())
   
   var postAddress = getMarathonAddress() + "/v2/eventSubscriptions"
-  var postValues = make(map[string][]string)
   var urlParams = make(url.Values)
   urlParams.Add("callbackUrl", getThisServiceAddress())
-  resp, err := http.PostForm(postAddress + "?" + urlParams.Encode(), postValues)
+  resp, err := http.Post(postAddress + "?" + urlParams.Encode(), "application/json", nil)
   if err != nil {
-    log.Fatal("Couldn't register service with Marathon")
+    log.Fatal("FATAL Couldn't register service with Marathon")
   }
-  log.Println("Successfully registered with Marathon")
+  log.Println("INFO Successfully registered with Marathon")
   resp.Body.Close()
 }
 
 func main() {
+  log.Println("INFO Application started")
   flag.Parse()
   applicationMap := initApplicationMap()
   registerWithMarathon()
