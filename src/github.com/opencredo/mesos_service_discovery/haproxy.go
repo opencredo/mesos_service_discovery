@@ -6,6 +6,7 @@ import (
   "os"
   "io/ioutil"
   "os/exec"
+  "strings"
 )
 
 var haproxyHeader = `
@@ -44,10 +45,11 @@ func updateHAProxyConfig(applicationMap map[string]Application) {
 func generateHAProxyConfig(tmp *os.File, applicationMap map[string]Application) {
   fmt.Fprintf(tmp, haproxyHeader)
   for appId, app := range applicationMap {
-    fmt.Fprintf(tmp, "\nlisten %s\n  bind 0.0.0.0:%d\n  mode tcp\n  option tcplog\n  balance leastconn\n", appId, app.Ports[0])
+    var safeAppId = strings.Replace(appId, "/", "_", -1)
+    fmt.Fprintf(tmp, "\nlisten %s\n  bind 0.0.0.0:%d\n  mode tcp\n  option tcplog\n  balance leastconn\n", safeAppId, app.Ports[0])
     i := 0
     for _, task := range app.ApplicationInstances {
-      fmt.Fprintf(tmp, "  server %s-%d %s:%d check\n", appId, i, task.Host, task.Ports[0])
+      fmt.Fprintf(tmp, "  server %s-%d %s:%d check\n", safeAppId, i, task.Host, task.Ports[0])
       i++
     }
   }
