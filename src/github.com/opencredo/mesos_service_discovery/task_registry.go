@@ -17,7 +17,8 @@ type Task struct {
 }
 
 
-func addTask(applicationMap map[string]Application, appId string, task Task) {
+// Returns true if the applicationMap has changed
+func addTask(applicationMap map[string]Application, appId string, task Task) bool {
   app, ok := applicationMap[appId]
   if !ok {
     loadExistingApps(applicationMap)
@@ -25,10 +26,15 @@ func addTask(applicationMap map[string]Application, appId string, task Task) {
   app, ok = applicationMap[appId]
   if !ok {
     log.Printf("ERR Unknown application %s\n", appId)
-    return
+    return false
+  }
+  _, ok = app.ApplicationInstances[task.Id]
+  if ok {
+    return false
   }
   app.ApplicationInstances[task.Id] = task
   log.Printf("INFO Found task for %s on %s:%d [%s]\n", appId, task.Host, task.Ports[0], task.Id)
+  return true
 }
 
 func removeTask(applicationMap map[string]Application, appId string, taskId string) {

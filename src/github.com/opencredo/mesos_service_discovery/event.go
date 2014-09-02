@@ -16,15 +16,18 @@ type Event struct {
   Ports      []int
 }
 
-func processStatusUpdateEvent(applicationMap map[string]Application, e Event) {
+// Returns true if the applicationMap has changed
+func processStatusUpdateEvent(applicationMap map[string]Application, e Event) bool {
   if e.TaskStatus == "TASK_RUNNING" {
     task := Task{e.TaskId, e.Host, e.Ports}
-    addTask(applicationMap, e.AppId, task)
-  } else if e.TaskStatus == "TASK_KILLED" || e.TaskStatus == "TASK_LOST" || e.TaskStatus == "TASK_FAILED" {
+    return addTask(applicationMap, e.AppId, task)
+  } else if e.TaskStatus == "TASK_KILLED" || e.TaskStatus == "TASK_LOST" || e.TaskStatus == "TASK_FAILED" || e.TaskStatus == "TASK_FINISHED" {
     removeTask(applicationMap, e.AppId, e.TaskId)
     log.Printf("INFO Removed task for %s on %s [%s]\n", e.AppId, e.Host, e.TaskId)
+    return true
   } else {
     log.Printf("WARN Unknown task status %s\n", e.TaskStatus)
+    return false
   }
 }
 
@@ -41,8 +44,9 @@ func eventsWorker(applicationMap map[string]Application) {
     event := <-eventQueue
     e, ok := parseEvent(event)
     if ok && e.EventType == "status_update_event" {
-      processStatusUpdateEvent(applicationMap, e)
-      updateHAProxyConfig(applicationMap)
+      if processStatusUpdateEvent(applicationMap, e) {
+        updateHAProxyConfig(applicationMap)
+      }
     }
   }
 }
