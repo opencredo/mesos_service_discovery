@@ -22,11 +22,12 @@ func addTask(applicationMap map[string]Application, appId string, task Task) boo
   app, ok := applicationMap[appId]
   if !ok {
     loadExistingApps(applicationMap)
-  }
-  app, ok = applicationMap[appId]
-  if !ok {
-    log.Printf("ERR Unknown application %s\n", appId)
-    return false
+    app, ok = applicationMap[appId]
+    if !ok {
+      log.Printf("ERR Unknown application %s\n", appId)
+      return false
+    }
+    return true
   }
   _, ok = app.ApplicationInstances[task.Id]
   if ok {
