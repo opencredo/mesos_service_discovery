@@ -45,6 +45,9 @@ func updateHAProxyConfig(applicationMap map[string]Application) {
 func generateHAProxyConfig(tmp *os.File, applicationMap map[string]Application) {
   fmt.Fprintf(tmp, haproxyHeader)
   for appId, app := range applicationMap {
+    if len(app.Ports) == 0 {
+      continue
+    }
     var safeAppId = strings.Replace(appId, "/", "_", -1)
     fmt.Fprintf(tmp, "\nlisten %s\n  bind 0.0.0.0:%d\n  mode tcp\n  option tcplog\n  balance leastconn\n", safeAppId, app.Ports[0])
     i := 0

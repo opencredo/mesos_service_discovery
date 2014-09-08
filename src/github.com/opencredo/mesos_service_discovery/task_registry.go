@@ -1,6 +1,7 @@
 package main
 
 import (
+  "fmt"
   "log"
 )
 
@@ -34,7 +35,11 @@ func addTask(applicationMap map[string]Application, appId string, task Task) boo
     return false
   }
   app.ApplicationInstances[task.Id] = task
-  log.Printf("INFO Found task for %s on %s:%d [%s]\n", appId, task.Host, task.Ports[0], task.Id)
+  var port = ""
+  if len(task.Ports) != 0 {
+    port = fmt.Sprintf(":%d", task.Ports[0])
+  }
+  log.Printf("INFO Found task for %s on %s%s [%s]\n", appId, task.Host, port, task.Id)
   return true
 }
 
@@ -68,6 +73,11 @@ func loadExistingTasks(applicationMap map[string]Application, appId string) {
   }
   for _, task := range app.App.Tasks {
     addTask(applicationMap, appId, task)
+  }
+
+  if len(applicationMap[appId].ApplicationInstances) == 0 {
+    log.Printf("INFO Removing application '%s' from cache, because there are no running tasks", appId)
+    delete(applicationMap, appId)
   }
 }
 
