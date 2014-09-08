@@ -41,6 +41,10 @@ func addTask(applicationMap map[string]Application, appId string, task Task) boo
 func removeTask(applicationMap map[string]Application, appId string, taskId string) {
   app := applicationMap[appId]
   delete(app.ApplicationInstances, taskId)
+  if len(applicationMap[appId].ApplicationInstances) == 0 {
+    log.Printf("INFO Removing application '%s' from cache, because it has no running tasks left", appId)
+    delete(applicationMap, appId)
+  }
 }
 
 type MarathonAppsResponse struct {
