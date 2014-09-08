@@ -7,6 +7,7 @@ import (
   "log"
   "net/http"
   "net/url"
+  "time"
 )
 
 var LOCAL_HOST    = flag.String("host", "localhost", "The host this service runs on.")
@@ -40,23 +41,30 @@ func getResponseJSON(address string, v interface{}) error {
 }
 
 func registerWithMarathon() {
-  log.Printf("INFO Registering this service (%s) with Marathon", getThisServiceAddress())
-  
+
   var postAddress = getMarathonAddress() + "/v2/eventSubscriptions"
   var urlParams = make(url.Values)
   urlParams.Add("callbackUrl", getThisServiceAddress())
-  resp, err := http.Post(postAddress + "?" + urlParams.Encode(), "application/json", nil)
-  if err != nil {
-    log.Fatal("FATAL Couldn't register service with Marathon")
+
+  log.Printf("INFO Registering this service (%s) with Marathon (%s)", getThisServiceAddress(), postAddress)
+
+  for {
+    resp, err := http.Post(postAddress + "?" + urlParams.Encode(), "application/json", nil)
+    if err != nil {
+      log.Println("ERROR Couldn't register service with Marathon. Retrying...")
+      time.Sleep(time.Second)
+      continue;
+    }
+    log.Println("INFO Successfully registered with Marathon")
+    resp.Body.Close()
+    return
   }
-  log.Println("INFO Successfully registered with Marathon")
-  resp.Body.Close()
 }
 
 func main() {
   log.Println("INFO Application started")
   flag.Parse()
-  applicationMap := initApplicationMap()
   registerWithMarathon()
+  applicationMap := initApplicationMap()
   startEventService(applicationMap, *LOCAL_PORT)
 }
