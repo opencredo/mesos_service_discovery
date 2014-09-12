@@ -1,15 +1,15 @@
 package main
 
 import (
-  "fmt"
   "log"
   "os"
   "io/ioutil"
   "os/exec"
   "strings"
+  "text/template"
 )
 
-var haproxyHeader = `
+var haproxyTemplate = `
 global
   daemon
   log 127.0.0.1 local0
@@ -30,7 +30,32 @@ listen stats
   mode http
   stats enable
   stats auth admin:admin
+
+{{ range $appId, $app := . }}
+{{ if appExposesPorts $app }}
+listen {{ sanitizeApplicationId $appId }}
+  bind 0.0.0.0:{{ port $app }}
+  mode tcp
+  option tcplog
+  balance leastconn
+  {{ range $taskId, $task := $app.ApplicationInstances }}
+  server {{$taskId}} {{$task.Host}}:{{port $app}} check
+  {{ end }}
+{{ end }}
+{{ end }}
 `
+
+func appExposesPorts (app Application) bool {
+  return len(app.Ports) != 0;
+}
+
+func sanitizeApplicationId(appId string) string {
+  return strings.Replace(appId, "/", "_", -1)
+}
+
+func getApplicationPort(app Application) int {
+  return app.Ports[0]
+}
 
 func updateHAProxyConfig(applicationMap map[string]Application) {
   tmp, err := ioutil.TempFile("", "haproxy.cfg")
@@ -43,19 +68,15 @@ func updateHAProxyConfig(applicationMap map[string]Application) {
 }
 
 func generateHAProxyConfig(tmp *os.File, applicationMap map[string]Application) {
-  fmt.Fprintf(tmp, haproxyHeader)
-  for appId, app := range applicationMap {
-    if len(app.Ports) == 0 {
-      continue
-    }
-    var safeAppId = strings.Replace(appId, "/", "_", -1)
-    fmt.Fprintf(tmp, "\nlisten %s\n  bind 0.0.0.0:%d\n  mode tcp\n  option tcplog\n  balance leastconn\n", safeAppId, app.Ports[0])
-    i := 0
-    for _, task := range app.ApplicationInstances {
-      fmt.Fprintf(tmp, "  server %s-%d %s:%d check\n", safeAppId, i, task.Host, task.Ports[0])
-      i++
-    }
+  funcMap := template.FuncMap {
+    "appExposesPorts": appExposesPorts,
+    "sanitizeApplicationId": sanitizeApplicationId,
+    "port": getApplicationPort,
   }
+  tpl, err := template.New("haproxy").Funcs(funcMap).Parse(haproxyTemplate);
+  if err != nil { panic(err); }
+  err = tpl.Execute(tmp, applicationMap);
+  if err != nil { panic(err); }
 }
 
 func replaceHAProxyConfiguration(tmpFile string) {
