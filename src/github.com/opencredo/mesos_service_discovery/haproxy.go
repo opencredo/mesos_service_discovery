@@ -9,42 +9,6 @@ import (
   "text/template"
 )
 
-var haproxyTemplate = `
-global
-  daemon
-  log 127.0.0.1 local0
-  log 127.0.0.1 local1 notice
-  maxconn 4096
-
-defaults
-  log         global
-  retries     3
-  maxconn     2000
-  contimeout  5000
-  clitimeout  50000
-  srvtimeout  50000
-
-listen stats
-  bind 127.0.0.1:9090
-  balance
-  mode http
-  stats enable
-  stats auth admin:admin
-
-{{ range $appId, $app := . }}
-{{ if appExposesPorts $app }}
-listen {{ sanitizeApplicationId $appId }}
-  bind 0.0.0.0:{{ port $app }}
-  mode tcp
-  option tcplog
-  balance leastconn
-  {{ range $taskId, $task := $app.ApplicationInstances }}
-  server {{$taskId}} {{$task.Host}}:{{port $app}} check
-  {{ end }}
-{{ end }}
-{{ end }}
-`
-
 func appExposesPorts (app Application) bool {
   return len(app.Ports) != 0;
 }
@@ -57,23 +21,23 @@ func getApplicationPort(app Application) int {
   return app.Ports[0]
 }
 
-func updateHAProxyConfig(applicationMap map[string]Application) {
+func updateHAProxyConfig(applicationMap map[string]Application, haproxyTpl string) {
   tmp, err := ioutil.TempFile("", "haproxy.cfg")
   if err != nil {
     return
   }
-  generateHAProxyConfig(tmp, applicationMap)
+  generateHAProxyConfig(tmp, applicationMap, haproxyTpl)
   replaceHAProxyConfiguration(tmp.Name())
   reloadHAProxy()
 }
 
-func generateHAProxyConfig(tmp *os.File, applicationMap map[string]Application) {
+func generateHAProxyConfig(tmp *os.File, applicationMap map[string]Application, haproxyTpl string) {
   funcMap := template.FuncMap {
     "appExposesPorts": appExposesPorts,
     "sanitizeApplicationId": sanitizeApplicationId,
     "port": getApplicationPort,
   }
-  tpl, err := template.New("haproxy").Funcs(funcMap).Parse(haproxyTemplate);
+  tpl, err := template.New("haproxy").Funcs(funcMap).Parse(haproxyTpl);
   if err != nil { panic(err); }
   err = tpl.Execute(tmp, applicationMap);
   if err != nil { panic(err); }

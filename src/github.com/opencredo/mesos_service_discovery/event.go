@@ -39,13 +39,13 @@ func parseEvent(event []byte) (Event, bool) {
 
 var eventQueue = make(chan []byte)
 
-func eventsWorker(applicationMap map[string]Application) {
+func eventsWorker(applicationMap map[string]Application, haproxyTpl string) {
   for {
     event := <-eventQueue
     e, ok := parseEvent(event)
     if ok && e.EventType == "status_update_event" {
       if processStatusUpdateEvent(applicationMap, e) {
-        updateHAProxyConfig(applicationMap)
+        updateHAProxyConfig(applicationMap, haproxyTpl)
       }
     }
   }
@@ -58,8 +58,8 @@ func eventsHandler(w http.ResponseWriter, r *http.Request) {
   }
 }
 
-func startEventService(applicationMap map[string]Application, port string) {
-  go eventsWorker(applicationMap)
+func startEventService(applicationMap map[string]Application, port string, haproxyTpl string) {
+  go eventsWorker(applicationMap, haproxyTpl)
   http.HandleFunc("/events", eventsHandler)
 
   log.Printf("INFO Starting HTTP listener on port %s\n", port)

@@ -14,6 +14,7 @@ var LOCAL_HOST    = flag.String("host", "localhost", "The host this service runs
 var LOCAL_PORT    = flag.String("port", "8081", "The port to run this service on")
 var MARATHON_HOST = flag.String("marathon_host", "localhost", "The host Marathon is running on")
 var MARATHON_PORT = flag.String("marathon_port", "8080", "The port Marathon is running on")
+var HAPROXY_TPL   = flag.String("haproxy_template", "/etc/haproxy/haproxy.cfg.tpl", "The location of the HAProxy configuration template")
 
 func getMarathonAddress() string {
   return "http://" + *MARATHON_HOST + ":" + *MARATHON_PORT
@@ -61,10 +62,20 @@ func registerWithMarathon() {
   }
 }
 
+func readHAProxyTemplate(templateLocation string) string {
+  bytes, err := ioutil.ReadFile(templateLocation);
+  if (err != nil) {
+    log.Fatal("FATAL: Could not read HAProxy configuration template from " + templateLocation)
+  }
+  return string(bytes)
+}
+
 func main() {
   log.Println("INFO Application started")
   flag.Parse()
+  haproxyTpl := readHAProxyTemplate(*HAPROXY_TPL)
   registerWithMarathon()
   applicationMap := initApplicationMap()
-  startEventService(applicationMap, *LOCAL_PORT)
+  updateHAProxyConfig(applicationMap, haproxyTpl)
+  startEventService(applicationMap, *LOCAL_PORT, haproxyTpl)
 }
