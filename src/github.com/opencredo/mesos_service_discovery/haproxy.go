@@ -5,6 +5,7 @@ import (
   "os"
   "io/ioutil"
   "os/exec"
+  "regexp"
   "strings"
   "text/template"
 )
@@ -25,6 +26,11 @@ func getTaskPort(task Task) int {
   return task.Ports[0]
 }
 
+func stripVersion(appId string) string {
+  re := regexp.MustCompile("^(.*)-[0-9]+$")
+  return re.ReplaceAllString(appId, "$1")
+}
+
 func updateHAProxyConfig(applicationMap map[string]Application, haproxyTpl string) {
   tmp, err := ioutil.TempFile("", "haproxy.cfg")
   if err != nil {
@@ -41,6 +47,7 @@ func generateHAProxyConfig(tmp *os.File, applicationMap map[string]Application, 
     "sanitizeApplicationId": sanitizeApplicationId,
     "port": getApplicationPort,
     "taskPort": getTaskPort,
+    "stripVersion": stripVersion,
   }
   tpl, err := template.New("haproxy").Funcs(funcMap).Parse(haproxyTpl);
   if err != nil { panic(err); }
