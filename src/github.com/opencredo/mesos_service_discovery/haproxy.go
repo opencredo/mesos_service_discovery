@@ -21,6 +21,10 @@ func getApplicationPort(app Application) int {
   return app.Ports[0]
 }
 
+func getTaskPort(task Task) int {
+  return task.Ports[0]
+}
+
 func updateHAProxyConfig(applicationMap map[string]Application, haproxyTpl string) {
   tmp, err := ioutil.TempFile("", "haproxy.cfg")
   if err != nil {
@@ -36,6 +40,7 @@ func generateHAProxyConfig(tmp *os.File, applicationMap map[string]Application, 
     "appExposesPorts": appExposesPorts,
     "sanitizeApplicationId": sanitizeApplicationId,
     "port": getApplicationPort,
+    "taskPort": getTaskPort,
   }
   tpl, err := template.New("haproxy").Funcs(funcMap).Parse(haproxyTpl);
   if err != nil { panic(err); }

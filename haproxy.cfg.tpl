@@ -27,7 +27,7 @@ listen {{ sanitizeApplicationId $appId }}
   option tcplog
   balance leastconn
   {{ range $taskId, $task := $app.ApplicationInstances }}
-  server {{$taskId}} {{$task.Host}}:{{port $app}} check
+  server {{$taskId}} {{$task.Host}}:{{taskPort $task}} check
   {{ end }}
 {{ end }}
 {{ end }}
