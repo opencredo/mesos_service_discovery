@@ -25,10 +25,9 @@ func processStatusUpdateEvent(applicationMap map[string]Application, e Event) bo
     removeTask(applicationMap, e.AppId, e.TaskId)
     log.Printf("INFO Removed task for %s on %s [%s]\n", e.AppId, e.Host, e.TaskId)
     return true
-  } else {
-    log.Printf("WARN Unknown task status %s\n", e.TaskStatus)
-    return false
   }
+  log.Printf("WARN Unknown task status %s\n", e.TaskStatus)
+  return false
 }
 
 func parseEvent(event []byte) (Event, bool) {
