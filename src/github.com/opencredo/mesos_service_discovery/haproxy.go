@@ -12,7 +12,7 @@ import (
 )
 
 func appExposesPorts (app Application) bool {
-  return len(app.Ports) != 0;
+  return len(app.Ports) != 0 && app.Ports[0] != 0;
 }
 
 func sanitizeApplicationId(appId string) string {
