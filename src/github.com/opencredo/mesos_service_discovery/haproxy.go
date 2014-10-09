@@ -3,6 +3,7 @@ package main
 import (
   "log"
   "os"
+  "io"
   "io/ioutil"
   "os/exec"
   "regexp"
@@ -56,12 +57,25 @@ func generateHAProxyConfig(tmp *os.File, applicationMap map[string]Application, 
 }
 
 func replaceHAProxyConfiguration(tmpFile string) {
-  err := os.Rename(tmpFile, "/etc/haproxy/haproxy.cfg")
+  r, err := os.Open(tmpFile);
+  if (err != nil) {
+    log.Printf("ERR Couldn't open %s: %s", tmpFile, err)
+    return
+  }
+  defer r.Close()
+
+  w, err := os.Create("/etc/haproxy/haproxy.cfg")
+  if (err != nil) {
+    log.Printf("ERR Couldn't open /etc/haproxy/haproxy.cfg: %s", err)
+    return
+  }
+  defer w.Close()
+
+  _, err = io.Copy(w, r)
   if err != nil {
     log.Printf("ERR Couldn't write /etc/haproxy/haproxy.cfg: %s", err)
     return
   }
-  log.Println("INFO Written new /etc/haproxy/haproxy.cfg")
 }
 
 func reloadHAProxy() {
